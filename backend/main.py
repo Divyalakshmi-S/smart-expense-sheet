@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import engine, run_migrations
 from app import models
-from app.api import expenses, analytics, predictions, agent
+from app.api import expenses, analytics, predictions, agent, integrations
 
 models.Base.metadata.create_all(bind=engine)
 run_migrations()
@@ -26,6 +26,7 @@ app.include_router(expenses.router, prefix="/api/expenses", tags=["Expenses"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
 app.include_router(predictions.router, prefix="/api/predictions", tags=["Predictions"])
 app.include_router(agent.router, prefix="/api/agent", tags=["AI Agent"])
+app.include_router(integrations.router, prefix="/api/integrations", tags=["Integrations"])
 
 
 @app.get("/")

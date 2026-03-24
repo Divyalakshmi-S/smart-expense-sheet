@@ -108,3 +108,34 @@ class ChatResponse(BaseModel):
     reply: str
     sources: List[str] = []
     agent_steps: List[str] = []
+
+
+class SmsIngest(BaseModel):
+    text: str
+    received_at: Optional[str] = None
+    source: Optional[str] = "manual"
+
+
+class SmsBatchIngest(BaseModel):
+    messages: List[SmsIngest]
+
+
+class SmsTransactionOut(BaseModel):
+    id: int
+    raw_text: str
+    bank: Optional[str] = None
+    txn_type: Optional[str] = None
+    amount: Optional[float] = None
+    merchant: Optional[str] = None
+    account_last4: Optional[str] = None
+    upi_ref: Optional[str] = None
+    balance_after: Optional[float] = None
+    txn_date: Optional[datetime] = None
+    auto_category: Optional[str] = None
+    source: str
+    is_parseable: bool
+    ignore_reason: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

@@ -65,3 +65,23 @@ class ChatHistory(Base):
     role = Column(String)  # user / assistant
     content = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class SmsTransaction(Base):
+    __tablename__ = "sms_transactions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    raw_text = Column(Text)
+    bank = Column(String, nullable=True)
+    txn_type = Column(String, nullable=True)          # debit | credit | collect_request | unknown | ignored
+    amount = Column(Float, nullable=True)
+    merchant = Column(String, nullable=True)
+    account_last4 = Column(String, nullable=True)
+    upi_ref = Column(String, nullable=True, index=True)
+    balance_after = Column(Float, nullable=True)
+    txn_date = Column(DateTime, nullable=True, index=True)
+    auto_category = Column(String, nullable=True)
+    source = Column(String, default="manual")         # manual | android | email
+    is_parseable = Column(Boolean, default=True)
+    ignore_reason = Column(String, nullable=True)      # otp | biller_confirm | refund_notice | advisory
+    created_at = Column(DateTime, default=datetime.utcnow)

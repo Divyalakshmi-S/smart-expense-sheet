@@ -20,6 +20,8 @@ def _expenses_as_dicts(db: Session):
             "comments": e.comments,
             "necessity_level": e.necessity_level,
             "frequency": e.frequency,
+            "data_month": e.data_month,
+            "data_year": e.data_year,
         }
         for e in db.query(models.Expense).filter(models.Expense.is_active == True).all()
     ]
@@ -62,3 +64,15 @@ def get_investment_growth(years: int = 5, db: Session = Depends(get_db)):
     expenses = _expenses_as_dicts(db)
     investments = [e for e in expenses if e["expense_type"] == "investment"]
     return ml_predictor.investment_growth_projection(investments, years=years)
+
+
+@router.get("/health-score")
+def get_health_score(db: Session = Depends(get_db)):
+    expenses = _expenses_as_dicts(db)
+    return ml_predictor.budget_health_score(expenses)
+
+
+@router.get("/rule-analysis")
+def get_rule_analysis(db: Session = Depends(get_db)):
+    expenses = _expenses_as_dicts(db)
+    return ml_predictor.rule_analysis(expenses)

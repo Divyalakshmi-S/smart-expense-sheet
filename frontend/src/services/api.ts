@@ -69,6 +69,23 @@ export const predictionsApi = {
     api
       .get(`/predictions/investment-growth?years=${years}`)
       .then((r) => r.data),
+  healthScore: () => api.get("/predictions/health-score").then((r) => r.data),
+  ruleAnalysis: () => api.get("/predictions/rule-analysis").then((r) => r.data),
+};
+
+export const integrationsApi = {
+  ingestSms: (text: string, source = "manual") =>
+    api
+      .post("/integrations/sms", {
+        text,
+        received_at: new Date().toISOString(),
+        source,
+      })
+      .then((r) => r.data),
+  transactions: (days = 30) =>
+    api.get(`/integrations/sms/transactions?days=${days}`).then((r) => r.data),
+  summary: (days = 30) =>
+    api.get(`/integrations/sms/summary?days=${days}`).then((r) => r.data),
 };
 
 export const agentApi = {

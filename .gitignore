@@ -28,3 +28,6 @@ Thumbs.db
 # IDE
 .vscode/settings.json
 .idea/
+
+# Dev-only: tests and sample data (not needed in production)
+backend/tests/

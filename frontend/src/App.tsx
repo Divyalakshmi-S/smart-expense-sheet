@@ -1,20 +1,22 @@
 import { useState, useEffect } from 'react'
 import type { ElementType } from 'react'
-import { LayoutDashboard, Table2, TrendingUp, BrainCircuit, FileUp, Moon, Sun, Wallet } from 'lucide-react'
+import { LayoutDashboard, Table2, TrendingUp, BrainCircuit, FileUp, Moon, Sun, Wallet, Smartphone } from 'lucide-react'
 import Dashboard from './components/Dashboard'
 import ExpenseTable from './components/ExpenseTable'
 import Predictions from './components/Predictions'
 import AIAgent from './components/AIAgent'
 import UploadCSV from './components/UploadCSV'
+import Integrations from './components/Integrations'
 import type { Tab } from './types'
 import clsx from 'clsx'
 
 const TABS: { id: Tab; label: string; icon: ElementType; desc: string }[] = [
-  { id: 'dashboard',   label: 'Overview',     icon: LayoutDashboard, desc: 'Charts & KPIs'         },
-  { id: 'expenses',    label: 'Expenses',      icon: Table2,          desc: 'All line items'        },
-  { id: 'predictions', label: 'Forecast',      icon: TrendingUp,      desc: 'ML predictions'        },
-  { id: 'agent',       label: 'Ask AI',        icon: BrainCircuit,    desc: 'Chat with your data'   },
-  { id: 'upload',      label: 'Import CSV',    icon: FileUp,          desc: 'Upload expense sheet'  },
+  { id: 'dashboard',     label: 'Overview',     icon: LayoutDashboard, desc: 'Charts & KPIs'         },
+  { id: 'expenses',      label: 'Expenses',      icon: Table2,          desc: 'All line items'        },
+  { id: 'predictions',   label: 'Forecast',      icon: TrendingUp,      desc: 'ML predictions'        },
+  { id: 'agent',         label: 'Ask AI',        icon: BrainCircuit,    desc: 'Chat with your data'   },
+  { id: 'upload',        label: 'Import CSV',    icon: FileUp,          desc: 'Upload expense sheet'  },
+  { id: 'integrations',  label: 'SMS Sync',      icon: Smartphone,      desc: 'Auto-ingest bank SMS'  },
 ]
 
 export default function App() {
@@ -103,17 +105,19 @@ export default function App() {
       <main className="max-w-7xl mx-auto px-4 py-6">
         {/* Page header hint */}
         <div className="mb-5">
-          {tab === 'dashboard'   && <PageHeader title="Financial Overview" sub="Your complete money picture for March 2026" />}
-          {tab === 'expenses'    && <PageHeader title="All Expenses" sub="Search, filter and manage every line item" />}
-          {tab === 'predictions' && <PageHeader title="Forecast & Insights" sub="ML predictions, savings opportunities and anomalies" />}
-          {tab === 'agent'       && <PageHeader title="Ask AI" sub="Chat with your expense data in plain English" />}
-          {tab === 'upload'      && <PageHeader title="Import CSV" sub="Upload your expense spreadsheet to get started" />}
+          {tab === 'dashboard'     && <PageHeader title="Financial Overview" sub="Your complete money picture for March 2026" />}
+          {tab === 'expenses'      && <PageHeader title="All Expenses" sub="Search, filter and manage every line item" />}
+          {tab === 'predictions'   && <PageHeader title="Forecast & Insights" sub="ML predictions, savings opportunities and anomalies" />}
+          {tab === 'agent'         && <PageHeader title="Ask AI" sub="Chat with your expense data in plain English" />}
+          {tab === 'upload'        && <PageHeader title="Import CSV" sub="Upload your expense spreadsheet to get started" />}
+          {tab === 'integrations'  && <PageHeader title="SMS Integration" sub="Auto-ingest bank & UPI transaction alerts in real time" />}
         </div>
-        {tab === 'dashboard'   && <Dashboard />}
-        {tab === 'expenses'    && <ExpenseTable />}
-        {tab === 'predictions' && <Predictions />}
-        {tab === 'agent'       && <AIAgent />}
-        {tab === 'upload'      && <UploadCSV />}
+        {tab === 'dashboard'     && <Dashboard />}
+        {tab === 'expenses'      && <ExpenseTable />}
+        {tab === 'predictions'   && <Predictions />}
+        {tab === 'agent'         && <AIAgent />}
+        {tab === 'upload'        && <UploadCSV />}
+        {tab === 'integrations'  && <Integrations />}
       </main>
     </div>
   )
