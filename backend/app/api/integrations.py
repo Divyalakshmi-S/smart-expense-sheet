@@ -132,6 +132,28 @@ def ingest_sms_batch(
     return {"ingested": ingested, "skipped": skipped}
 
 
+@router.get("/sms/debug")
+def sms_debug(db: Session = Depends(get_db)):
+    """Temporary debug endpoint — shows last 20 raw SMS records regardless of parseable status."""
+    rows = db.query(models.SmsTransaction).order_by(models.SmsTransaction.id.desc()).limit(20).all()
+    return [
+        {
+            "id": r.id,
+            "txn_type": r.txn_type,
+            "is_parseable": r.is_parseable,
+            "ignore_reason": r.ignore_reason,
+            "bank": r.bank,
+            "merchant": r.merchant,
+            "amount": r.amount,
+            "auto_category": r.auto_category,
+            "source": r.source,
+            "created_at": str(r.created_at),
+            "raw_text_preview": (r.raw_text or "")[:120],
+        }
+        for r in rows
+    ]
+
+
 @router.get("/sms/transactions", response_model=List[schemas.SmsTransactionOut])
 def list_sms_transactions(
     days: int = 30,
