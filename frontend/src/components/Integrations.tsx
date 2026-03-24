@@ -116,22 +116,17 @@ export default function Integrations() {
                     </div>
                     <div className="grid grid-cols-[72px_1fr] gap-x-2 items-start">
                       <span className="text-slate-400 font-medium pt-0.5">URL</span>
-                      <code className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded font-mono break-all">{apiBase}/api/integrations/sms</code>
+                      <code className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded font-mono break-all">{apiBase}/api/integrations/sms/plain?source=android</code>
+                    </div>
+                    <div className="grid grid-cols-[72px_1fr] gap-x-2 items-start">
+                      <span className="text-slate-400 font-medium pt-0.5">Content-Type</span>
+                      <code className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded font-mono">text/plain</code>
                     </div>
                     <div className="grid grid-cols-[72px_1fr] gap-x-2 items-start">
                       <span className="text-slate-400 font-medium pt-0.5">Body</span>
                       <div className="space-y-1">
-                        <code className="block bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded font-mono break-all">{`{"text": "[sms_body]", "source": "android"}`}</code>
-                        <p className="text-xs text-amber-600 dark:text-amber-400">
-                          ⚠️ Do <strong>not</strong> type <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">{'[sms_body]'}</code> manually.
-                          In the Body field, place your cursor inside the quotes, then tap the <strong>{'{x}'}</strong> magic-text button → select <strong>SMS Body</strong>.
-                          It must appear as a blue chip/tag, not plain text.
-                        </p>
+                        <p className="text-xs text-slate-600 dark:text-slate-300">Leave the body field empty, then tap the <strong>{'{x}'}</strong> magic-text button and insert <strong>SMS Body</strong> — it appears as a blue chip. That's it, no JSON needed.</p>
                       </div>
-                    </div>
-                    <div className="grid grid-cols-[72px_1fr] gap-x-2 items-start">
-                      <span className="text-slate-400 font-medium pt-0.5">Header</span>
-                      <code className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded font-mono">Content-Type: application/json</code>
                     </div>
                     <div className="grid grid-cols-[72px_1fr] gap-x-2 items-start">
                       <span className="text-slate-400 font-medium pt-0.5">Auth</span>

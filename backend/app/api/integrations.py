@@ -1,5 +1,5 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException, Header, Request
 from sqlalchemy.orm import Session
 from typing import Optional, List
 from datetime import datetime, timedelta
@@ -10,6 +10,49 @@ from app.config import settings
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+
+def _save_sms(text: str, source: str, received_at, db: Session):
+    """Shared logic: parse + save a single SMS text. Returns the saved model instance."""
+    parsed = parse_sms(text, received_at)
+    parsed = llm_enrich(parsed, text, settings.GROQ_API_KEY)
+    logger.info(
+        "SMS ingest | source=%s bank=%s type=%s amount=%s merchant=%s parseable=%s upi=%s",
+        source,
+        parsed.get("bank") or "unknown",
+        parsed.get("txn_type"),
+        parsed.get("amount"),
+        parsed.get("merchant") or "—",
+        parsed.get("is_parseable"),
+        parsed.get("upi_ref") or "—",
+    )
+    if parsed["upi_ref"]:
+        existing = db.query(models.SmsTransaction).filter_by(upi_ref=parsed["upi_ref"]).first()
+        if existing:
+            if existing.is_parseable or not parsed["is_parseable"]:
+                logger.info("SMS duplicate skipped | upi_ref=%s", parsed["upi_ref"])
+                return existing
+            logger.info("SMS upgrade: replacing unparseable record | upi_ref=%s", parsed["upi_ref"])
+            for field in ["txn_type", "amount", "merchant", "bank", "account_last4",
+                          "balance_after", "txn_date", "auto_category", "is_parseable"]:
+                setattr(existing, field, parsed[field])
+            existing.ignore_reason = parsed.get("ignore_reason")
+            db.commit()
+            db.refresh(existing)
+            return existing
+    txn = models.SmsTransaction(
+        raw_text=parsed["raw_text"], bank=parsed["bank"], txn_type=parsed["txn_type"],
+        amount=parsed["amount"], merchant=parsed["merchant"], account_last4=parsed["account_last4"],
+        upi_ref=parsed["upi_ref"], balance_after=parsed["balance_after"], txn_date=parsed["txn_date"],
+        auto_category=parsed["auto_category"], source=source,
+        is_parseable=parsed["is_parseable"], ignore_reason=parsed.get("ignore_reason"),
+    )
+    db.add(txn)
+    db.commit()
+    db.refresh(txn)
+    logger.info("SMS saved | id=%d type=%s amount=%s merchant=%s category=%s",
+                txn.id, txn.txn_type, txn.amount, txn.merchant, txn.auto_category)
+    return txn
 
 
 def _verify_token(authorization: Optional[str] = Header(default=None)):
@@ -29,75 +72,36 @@ def ingest_sms(
     db: Session = Depends(get_db),
     _: None = Depends(_verify_token),
 ):
-    """Ingest a single bank SMS. Called by Android auto-forward or manual paste."""
-    # Guard: MacroDroid sent the variable placeholder literally instead of the SMS text.
-    # This means the user typed [sms_body] manually instead of using the variable picker.
-    if body.text.strip() == "[sms_body]":
-        logger.warning("MacroDroid sent literal '[sms_body]' — variable not substituted. Check MacroDroid HTTP body setup.")
-        raise HTTPException(
-            status_code=400,
-            detail="MacroDroid configuration error: '[sms_body]' was sent as literal text. "
-                   "In MacroDroid's HTTP Action body field, tap the {x} button to INSERT the SMS Body variable — don't type it manually."
-        )
-    parsed = parse_sms(body.text, body.received_at)
-    parsed = llm_enrich(parsed, body.text, settings.GROQ_API_KEY)
+    """Ingest a single bank SMS via JSON body."""
+    if body.text.strip() in ("[sms_body]", "[sms_message]", "{sms_message}", ""):
+        raise HTTPException(status_code=400,
+            detail="MacroDroid variable not substituted — see /api/integrations/sms/plain for a simpler setup.")
+    return _save_sms(body.text, body.source or "manual", body.received_at, db)
 
-    logger.info(
-        "SMS ingest | source=%s bank=%s type=%s amount=%s merchant=%s parseable=%s upi=%s",
-        body.source or "manual",
-        parsed.get("bank") or "unknown",
-        parsed.get("txn_type"),
-        parsed.get("amount"),
-        parsed.get("merchant") or "—",
-        parsed.get("is_parseable"),
-        parsed.get("upi_ref") or "—",
-    )
 
-    # Deduplicate by UPI ref to avoid double-ingesting the same transaction.
-    # Exception: if the existing record was unparseable (old/bad parse) and the
-    # new parse succeeded, update the existing record with the improved data.
-    if parsed["upi_ref"]:
-        existing = db.query(models.SmsTransaction).filter_by(upi_ref=parsed["upi_ref"]).first()
-        if existing:
-            if existing.is_parseable or not parsed["is_parseable"]:
-                logger.info("SMS duplicate skipped | upi_ref=%s", parsed["upi_ref"])
-                return existing
-            logger.info("SMS upgrade: replacing unparseable record | upi_ref=%s", parsed["upi_ref"])
-            # Upgrade stale unparseable record with better parsed data
-            existing.txn_type = parsed["txn_type"]
-            existing.amount = parsed["amount"]
-            existing.merchant = parsed["merchant"]
-            existing.bank = parsed["bank"]
-            existing.account_last4 = parsed["account_last4"]
-            existing.balance_after = parsed["balance_after"]
-            existing.txn_date = parsed["txn_date"]
-            existing.auto_category = parsed["auto_category"]
-            existing.is_parseable = parsed["is_parseable"]
-            existing.ignore_reason = parsed.get("ignore_reason")
-            db.commit()
-            db.refresh(existing)
-            return existing
+@router.post("/sms/plain", response_model=schemas.SmsTransactionOut)
+async def ingest_sms_plain(
+    request: Request,
+    source: str = "android",
+    db: Session = Depends(get_db),
+    _: None = Depends(_verify_token),
+):
+    """
+    Ingest SMS from plain-text body — avoids JSON quoting issues with MacroDroid.
 
-    txn = models.SmsTransaction(
-        raw_text=parsed["raw_text"],
-        bank=parsed["bank"],
-        txn_type=parsed["txn_type"],
-        amount=parsed["amount"],
-        merchant=parsed["merchant"],
-        account_last4=parsed["account_last4"],
-        upi_ref=parsed["upi_ref"],
-        balance_after=parsed["balance_after"],
-        txn_date=parsed["txn_date"],
-        auto_category=parsed["auto_category"],
-        source=body.source or "manual",
-        is_parseable=parsed["is_parseable"],
-        ignore_reason=parsed.get("ignore_reason"),
-    )
-    db.add(txn)
-    db.commit()
-    db.refresh(txn)
-    logger.info("SMS saved | id=%d type=%s amount=%s merchant=%s category=%s", txn.id, txn.txn_type, txn.amount, txn.merchant, txn.auto_category)
-    return txn
+    MacroDroid HTTP Action setup (SIMPLEST):
+      Method:       POST
+      URL:          https://smartbudget-me8c.onrender.com/api/integrations/sms/plain?source=android
+      Content-Type: text/plain
+      Body:         [insert SMS Body magic-variable here — appears as a blue chip]
+    """
+    raw = await request.body()
+    text = raw.decode("utf-8", errors="replace").strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Empty body")
+    logger.info("SMS plain ingest | source=%s len=%d preview=%.80s", source, len(text), text)
+    return _save_sms(text, source, None, db)
+
 
 
 @router.post("/sms/batch")
