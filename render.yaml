@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: smart-expense-analyser-api
+    env: python
+    buildCommand: "pip install -r backend/requirements.txt"
+    startCommand: "cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false # set in Render dashboard
+      - key: CORS_ORIGINS
+        value: "https://your-app.vercel.app,http://localhost:5173"
+      - key: DATABASE_URL
+        value: "sqlite:///./expense_analyser.db"
+    disk:
+      name: data
+      mountPath: /opt/render/project/src/backend
+      sizeGB: 1
