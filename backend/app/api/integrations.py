@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 from typing import Optional, List
@@ -8,6 +9,7 @@ from app.services.sms_parser import parse_sms, llm_enrich
 from app.config import settings
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def _verify_token(authorization: Optional[str] = Header(default=None)):
@@ -28,8 +30,15 @@ def ingest_sms(
     _: None = Depends(_verify_token),
 ):
     """Ingest a single bank SMS. Called by Android auto-forward or manual paste."""
+    logger.info("SMS ingest received | source=%s len=%d preview=%.80s", body.source, len(body.text), body.text)
     parsed = parse_sms(body.text, body.received_at)
     parsed = llm_enrich(parsed, body.text, settings.GROQ_API_KEY)
+    logger.info(
+        "SMS parsed | bank=%s type=%s amount=%s merchant=%s parseable=%s upi=%s ignore=%s",
+        parsed.get("bank"), parsed.get("txn_type"), parsed.get("amount"),
+        parsed.get("merchant"), parsed.get("is_parseable"),
+        parsed.get("upi_ref"), parsed.get("ignore_reason"),
+    )
 
     # Deduplicate by UPI ref to avoid double-ingesting the same transaction.
     # Exception: if the existing record was unparseable (old/bad parse) and the
@@ -38,7 +47,9 @@ def ingest_sms(
         existing = db.query(models.SmsTransaction).filter_by(upi_ref=parsed["upi_ref"]).first()
         if existing:
             if existing.is_parseable or not parsed["is_parseable"]:
+                logger.info("SMS duplicate skipped | upi_ref=%s", parsed["upi_ref"])
                 return existing
+            logger.info("SMS upgrading unparseable record | upi_ref=%s", parsed["upi_ref"])
             # Upgrade stale unparseable record with better parsed data
             existing.txn_type = parsed["txn_type"]
             existing.amount = parsed["amount"]
@@ -72,6 +83,8 @@ def ingest_sms(
     db.add(txn)
     db.commit()
     db.refresh(txn)
+    logger.info("SMS saved | id=%d type=%s amount=%s merchant=%s category=%s",
+                txn.id, txn.txn_type, txn.amount, txn.merchant, txn.auto_category)
     return txn
 
 
@@ -82,6 +95,7 @@ def ingest_sms_batch(
     _: None = Depends(_verify_token),
 ):
     """Ingest multiple SMS messages at once (e.g. from SMS Backup & Restore XML export)."""
+    logger.info("SMS batch ingest started | count=%d", len(body.messages))
     ingested, skipped = 0, 0
     for msg in body.messages:
         parsed = parse_sms(msg.text, msg.received_at)
@@ -112,6 +126,7 @@ def ingest_sms_batch(
         db.add(txn)
         ingested += 1
     db.commit()
+    logger.info("SMS batch complete | ingested=%d skipped=%d", ingested, skipped)
     return {"ingested": ingested, "skipped": skipped}
 
 
@@ -128,7 +143,9 @@ def list_sms_transactions(
     )
     if txn_type:
         q = q.filter(models.SmsTransaction.txn_type == txn_type)
-    return q.order_by(models.SmsTransaction.txn_date.desc()).limit(200).all()
+    results = q.order_by(models.SmsTransaction.txn_date.desc()).limit(200).all()
+    logger.info("SMS transactions query | days=%d txn_type=%s results=%d", days, txn_type, len(results))
+    return results
 
 
 @router.get("/sms/summary")
@@ -156,6 +173,7 @@ def sms_summary(days: int = 30, db: Session = Depends(get_db)):
         total += amt
 
     top_merchants = sorted(by_merchant.items(), key=lambda x: -x[1])[:10]
+    logger.info("SMS summary | days=%d total=%.2f txns=%d categories=%d", days, total, len(rows), len(by_cat))
     return {
         "days": days,
         "total_debited": round(total, 2),
