@@ -120,7 +120,14 @@ export default function Integrations() {
                     </div>
                     <div className="grid grid-cols-[72px_1fr] gap-x-2 items-start">
                       <span className="text-slate-400 font-medium pt-0.5">Body</span>
-                      <code className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded font-mono break-all">{`{"text": "[sms_body]", "source": "android"}`}</code>
+                      <div className="space-y-1">
+                        <code className="block bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded font-mono break-all">{`{"text": "[sms_body]", "source": "android"}`}</code>
+                        <p className="text-xs text-amber-600 dark:text-amber-400">
+                          ⚠️ Do <strong>not</strong> type <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">{'[sms_body]'}</code> manually.
+                          In the Body field, place your cursor inside the quotes, then tap the <strong>{'{x}'}</strong> magic-text button → select <strong>SMS Body</strong>.
+                          It must appear as a blue chip/tag, not plain text.
+                        </p>
+                      </div>
                     </div>
                     <div className="grid grid-cols-[72px_1fr] gap-x-2 items-start">
                       <span className="text-slate-400 font-medium pt-0.5">Header</span>

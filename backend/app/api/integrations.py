@@ -30,6 +30,15 @@ def ingest_sms(
     _: None = Depends(_verify_token),
 ):
     """Ingest a single bank SMS. Called by Android auto-forward or manual paste."""
+    # Guard: MacroDroid sent the variable placeholder literally instead of the SMS text.
+    # This means the user typed [sms_body] manually instead of using the variable picker.
+    if body.text.strip() == "[sms_body]":
+        logger.warning("MacroDroid sent literal '[sms_body]' — variable not substituted. Check MacroDroid HTTP body setup.")
+        raise HTTPException(
+            status_code=400,
+            detail="MacroDroid configuration error: '[sms_body]' was sent as literal text. "
+                   "In MacroDroid's HTTP Action body field, tap the {x} button to INSERT the SMS Body variable — don't type it manually."
+        )
     parsed = parse_sms(body.text, body.received_at)
     parsed = llm_enrich(parsed, body.text, settings.GROQ_API_KEY)
 
