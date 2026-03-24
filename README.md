@@ -268,14 +268,14 @@ The AI Agent tab understands plain-English questions about your finances:
 3. Connect your repo — Render auto-detects `render.yaml`
 4. Set environment variables in the Render dashboard:
    - `GROQ_API_KEY` — your Groq key
-   - `CORS_ORIGINS` — include your Vercel URL (e.g. `https://your-app.vercel.app`)
+   - `CORS_ORIGINS` — `https://smartbudget-henna.vercel.app,http://localhost:5173`
    - `SMS_INGEST_TOKEN` — any random secret string to secure SMS ingestion
 
 ### Frontend → Vercel
 
 1. Go to [vercel.com](https://vercel.com) → New Project
 2. Import your GitHub repo, set **Root Directory** to `frontend`
-3. Add environment variable: `VITE_API_URL=https://your-render-service.onrender.com/api`
+3. Add environment variable: `VITE_API_URL=https://smartbudget-me8c.onrender.com/api`
 4. Deploy
 
 ---

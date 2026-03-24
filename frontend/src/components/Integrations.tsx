@@ -53,7 +53,7 @@ export default function Integrations() {
     ? Object.entries(summary.by_category).map(([cat, total]) => ({ name: cat, value: total }))
     : []
 
-  const apiBase = window.location.origin.replace(':5173', ':8000').replace(':3000', ':8000')
+  const apiBase = (import.meta.env.VITE_API_URL as string || 'http://localhost:8000/api').replace(/\/api$/, '')
 
   return (
     <div className="space-y-6">
@@ -89,11 +89,7 @@ export default function Integrations() {
             </ol>
             <p className="text-xs text-slate-400 mt-3 flex items-start gap-1">
               <Info className="w-3 h-3 shrink-0 mt-0.5" />
-              No data leaves your device except to your own backend. Optionally set
-              <code className="mx-1 bg-slate-100 dark:bg-slate-700 px-1 rounded">SMS_INGEST_TOKEN=yourtoken</code>
-              in <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">.env</code> and add a
-              <code className="mx-1 bg-slate-100 dark:bg-slate-700 px-1 rounded">Authorization: Bearer yourtoken</code>
-              header in MacroDroid to secure the endpoint.
+              No data leaves your device except to your own backend.
             </p>
           </div>
         </div>
