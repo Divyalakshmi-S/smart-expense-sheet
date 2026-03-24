@@ -63,33 +63,99 @@ export default function Integrations() {
         <div className="flex items-start gap-3">
           <Smartphone className="w-5 h-5 text-brand-500 shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold mb-2">Android Auto-Forward Setup</h3>
-            <p className="text-sm text-slate-500 mb-3">
-              Forward bank SMS to this app automatically as they arrive using <strong>MacroDroid</strong> (free on Play Store):
+            <h3 className="font-semibold mb-1">Android Auto-Forward Setup</h3>
+            <p className="text-sm text-slate-500 mb-4">
+              Use <strong>MacroDroid</strong> (free on Play Store) to automatically forward bank SMS to this app as they arrive.
             </p>
-            <ol className="text-sm text-slate-600 dark:text-slate-300 space-y-2 list-decimal list-inside">
-              <li>Install <strong>MacroDroid</strong> on your Android phone</li>
-              <li>
-                Create a macro → Trigger: <code className="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-xs">SMS Received</code>,
-                filter sender containing <code className="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-xs">HDFC</code> /
-                <code className="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-xs">ICICI</code> /
-                <code className="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-xs">SBI</code> etc.
-              </li>
-              <li>
-                Action: <code className="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-xs">HTTP Request → POST</code> to:<br />
-                <code className="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-xs break-all">{apiBase}/api/integrations/sms</code>
-              </li>
-              <li>
-                Body (JSON):{' '}
-                <code className="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-xs">
-                  {`{"text": "[sms_body]", "source": "android"}`}
-                </code>
-              </li>
-              <li>That's it — new bank SMS will appear here within seconds 🎉</li>
-            </ol>
-            <p className="text-xs text-slate-400 mt-3 flex items-start gap-1">
+
+            <div className="space-y-4">
+
+              {/* Step 1 */}
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-500 text-white text-xs font-bold flex items-center justify-center">1</span>
+                <div>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Install MacroDroid</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Search <strong>"MacroDroid"</strong> on the Google Play Store and install it (free).</p>
+                </div>
+              </div>
+
+              {/* Step 2 */}
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-500 text-white text-xs font-bold flex items-center justify-center">2</span>
+                <div>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Create a new Macro</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Open MacroDroid → tap <strong>+</strong> → give it a name like <em>"Bank SMS Forward"</em>.</p>
+                </div>
+              </div>
+
+              {/* Step 3 */}
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-500 text-white text-xs font-bold flex items-center justify-center">3</span>
+                <div>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Add Trigger → SMS Received</p>
+                  <p className="text-xs text-slate-500 mt-1">Tap <strong>Triggers → Add Trigger → SMS Received</strong>.</p>
+                  <p className="text-xs text-slate-500 mt-1">Under <strong>"SMS Content"</strong>, select <strong>"Content Contains"</strong> and enter:</p>
+                  <code className="inline-block mt-1 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-xs font-mono">debited</code>
+                  <p className="text-xs text-slate-500 mt-2">
+                    Repeat to add a second trigger with <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded text-xs">credited</code> — both point to the same macro.
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1 italic">Tip: leave "Sender" blank to catch all banks (ICICI, SBI, HDFC, Indian Bank, etc.).</p>
+                </div>
+              </div>
+
+              {/* Step 4 */}
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-500 text-white text-xs font-bold flex items-center justify-center">4</span>
+                <div>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Add Action → HTTP Request</p>
+                  <p className="text-xs text-slate-500 mt-1">Tap <strong>Actions → Add Action → Connectivity → HTTP Request</strong>.</p>
+                  <div className="mt-2 space-y-2 text-xs">
+                    <div className="grid grid-cols-[72px_1fr] gap-x-2 items-start">
+                      <span className="text-slate-400 font-medium pt-0.5">Method</span>
+                      <code className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded font-mono">POST</code>
+                    </div>
+                    <div className="grid grid-cols-[72px_1fr] gap-x-2 items-start">
+                      <span className="text-slate-400 font-medium pt-0.5">URL</span>
+                      <code className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded font-mono break-all">{apiBase}/api/integrations/sms</code>
+                    </div>
+                    <div className="grid grid-cols-[72px_1fr] gap-x-2 items-start">
+                      <span className="text-slate-400 font-medium pt-0.5">Body</span>
+                      <code className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded font-mono break-all">{`{"text": "[sms_body]", "source": "android"}`}</code>
+                    </div>
+                    <div className="grid grid-cols-[72px_1fr] gap-x-2 items-start">
+                      <span className="text-slate-400 font-medium pt-0.5">Header</span>
+                      <code className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded font-mono">Content-Type: application/json</code>
+                    </div>
+                    <div className="grid grid-cols-[72px_1fr] gap-x-2 items-start">
+                      <span className="text-slate-400 font-medium pt-0.5">Auth</span>
+                      <span className="text-slate-500">
+                        Only if <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">SMS_INGEST_TOKEN</code> is set on Render —
+                        add a second header: <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">Authorization: Bearer &lt;your_token&gt;</code>.
+                        If the token is blank/unset, skip this.
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-2 italic">
+                    The magic variable <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">[sms_body]</code> is built into MacroDroid — it inserts the full SMS text automatically.
+                  </p>
+                </div>
+              </div>
+
+              {/* Step 5 */}
+              <div className="flex gap-3">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-500 text-white text-xs font-bold flex items-center justify-center">5</span>
+                <div>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Save & Enable the macro</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Tap the checkmark to save. Make sure the macro toggle is <strong>ON</strong> (green).</p>
+                  <p className="text-xs text-slate-500 mt-1">Send a test bank SMS or make a small UPI payment — it should appear in the transactions list below within seconds. 🎉</p>
+                </div>
+              </div>
+
+            </div>
+
+            <p className="text-xs text-slate-400 mt-4 flex items-start gap-1.5 border-t border-slate-100 dark:border-slate-700 pt-3">
               <Info className="w-3 h-3 shrink-0 mt-0.5" />
-              No data leaves your device except to your own backend.
+              No data leaves your device except to your own backend ({apiBase.replace('https://', '')}).
             </p>
           </div>
         </div>

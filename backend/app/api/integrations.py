@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 from typing import Optional, List
@@ -8,6 +9,7 @@ from app.services.sms_parser import parse_sms, llm_enrich
 from app.config import settings
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def _verify_token(authorization: Optional[str] = Header(default=None)):
@@ -31,6 +33,17 @@ def ingest_sms(
     parsed = parse_sms(body.text, body.received_at)
     parsed = llm_enrich(parsed, body.text, settings.GROQ_API_KEY)
 
+    logger.info(
+        "SMS ingest | source=%s bank=%s type=%s amount=%s merchant=%s parseable=%s upi=%s",
+        body.source or "manual",
+        parsed.get("bank") or "unknown",
+        parsed.get("txn_type"),
+        parsed.get("amount"),
+        parsed.get("merchant") or "—",
+        parsed.get("is_parseable"),
+        parsed.get("upi_ref") or "—",
+    )
+
     # Deduplicate by UPI ref to avoid double-ingesting the same transaction.
     # Exception: if the existing record was unparseable (old/bad parse) and the
     # new parse succeeded, update the existing record with the improved data.
@@ -38,7 +51,9 @@ def ingest_sms(
         existing = db.query(models.SmsTransaction).filter_by(upi_ref=parsed["upi_ref"]).first()
         if existing:
             if existing.is_parseable or not parsed["is_parseable"]:
+                logger.info("SMS duplicate skipped | upi_ref=%s", parsed["upi_ref"])
                 return existing
+            logger.info("SMS upgrade: replacing unparseable record | upi_ref=%s", parsed["upi_ref"])
             # Upgrade stale unparseable record with better parsed data
             existing.txn_type = parsed["txn_type"]
             existing.amount = parsed["amount"]
@@ -72,6 +87,7 @@ def ingest_sms(
     db.add(txn)
     db.commit()
     db.refresh(txn)
+    logger.info("SMS saved | id=%d type=%s amount=%s merchant=%s category=%s", txn.id, txn.txn_type, txn.amount, txn.merchant, txn.auto_category)
     return txn
 
 
@@ -112,6 +128,7 @@ def ingest_sms_batch(
         db.add(txn)
         ingested += 1
     db.commit()
+    logger.info("SMS batch complete | ingested=%d skipped=%d total=%d", ingested, skipped, ingested + skipped)
     return {"ingested": ingested, "skipped": skipped}
 
 
